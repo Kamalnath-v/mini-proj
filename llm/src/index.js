@@ -93,7 +93,7 @@ Provide a clear, concise, and helpful answer. Use simple language. If relevant, 
 
 // Visualize endpoint — generate interactive HTML/CSS/JS visualization for a subtopic
 app.post('/api/visualize', async (req, res) => {
-    const { subtopic } = req.body;
+    const { subtopic, userContext } = req.body;
 
     if (!subtopic || !subtopic.title) {
         return res.status(400).json({ error: 'Subtopic with title is required' });
@@ -101,27 +101,40 @@ app.post('/api/visualize', async (req, res) => {
 
     const subtopicTitle = subtopic.title;
     const subtopicDesc = subtopic.description || '';
+    const extraContext = userContext || '';
 
-    console.log(`[Visualize] Generating visualization for: "${subtopicTitle}"`);
+    console.log(`[Visualize] Generating visualization for: "${subtopicTitle}"${extraContext ? ` (with user context: "${extraContext}")` : ''}`);
 
     try {
-        const prompt = `You are an expert educational content creator. Create a single, self-contained HTML file that provides an interactive visualization to help a student understand the following topic:
+        const prompt = `You are a world-class interactive educational designer. Your task is to create a single, self-contained HTML file with an **interactive, animated visualization** that teaches the following topic in a way that is immediately understandable and engaging.
 
 Topic: ${subtopicTitle}
 ${subtopicDesc ? `Description: ${subtopicDesc}` : ''}
+${extraContext ? `\nStudent's request: ${extraContext}` : ''}
 
-Requirements:
-- The HTML file must be completely self-contained (inline CSS and JS, no external dependencies).
-- Create a visually appealing, interactive visualization that explains the concept.
-- Use animations, diagrams, interactive elements (buttons, sliders, click events) to make it engaging.
-- Use a clean, modern design with a dark background (#1a1a2e) and vibrant accent colors.
-- Include a clear title and brief explanation text.
-- The visualization should be educational — it should help someone truly understand the concept, not just look pretty.
-- Examples of good visualizations: animated flowcharts, interactive state diagrams, step-by-step walkthroughs, live code demos, draggable elements, animated data structures, etc.
-- Make sure the visualization fits within a 800x500 container.
-- Do NOT use any external libraries, CDNs, or imports. Everything must be inline.
+CRITICAL REQUIREMENTS FOR INTERACTIVITY:
+1. The visualization MUST be highly interactive — users should click, drag, hover, type, or press buttons to explore the concept. Static diagrams are NOT acceptable.
+2. Use at least 2-3 of these interactive techniques:
+   - Clickable step-by-step walkthroughs with "Next/Prev" controls
+   - Animated SVG or Canvas diagrams that build up progressively
+   - Interactive code playgrounds where users modify values and see results live
+   - Draggable elements to rearrange or connect concepts
+   - Toggle buttons to switch between views (e.g., before/after, input/output)
+   - Sliders or controls that change parameters in real-time
+   - Hover tooltips that reveal deeper explanations
+   - Animated state transitions showing how data flows or transforms
+3. Use smooth CSS animations and transitions everywhere — elements should fade in, slide, pulse, or transform. Nothing should appear statically.
+4. Color-code different concepts with a vibrant palette against a dark background (#0f0f23). Use gradients, glows (box-shadow), and subtle particle effects where appropriate.
+5. Include a clear title, a one-line subtitle explaining what the user will learn, and labels on all interactive elements.
+6. The visualization should teach through DOING — the user should understand the concept by interacting with it, not by reading paragraphs of text.
+7. Make it fit within an 860x560 viewport. Use CSS Grid or Flexbox for layout.
 
-Return ONLY the complete HTML code. Do not include any explanation text before or after the code. Do not wrap it in markdown code blocks. Start directly with <!DOCTYPE html> and end with </html>.`;
+TECHNICAL RULES:
+- Completely self-contained: inline CSS and JS only. NO external libraries, CDNs or imports.
+- Use modern JS (const, let, arrow functions, template literals).
+- Use requestAnimationFrame for smooth animations when needed.
+
+Return ONLY the raw HTML. No explanation text, no markdown fences. Start with <!DOCTYPE html> and end with </html>.`;
 
         const html = await askLLM(prompt, { temperature: 0.7, maxTokens: 8192 });
 

@@ -1,7 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-
 export default function VisualizationModal({ html, subtopicTitle, onClose }) {
     return (
         <div className="viz-overlay" onClick={onClose}>

@@ -20,6 +20,8 @@ export default function RoadmapDetailPage() {
     const [togglingComplete, setTogglingComplete] = useState({});
     const [vizLoading, setVizLoading] = useState({});
     const [vizModal, setVizModal] = useState({ open: false, html: '', title: '' });
+    const [vizPrompt, setVizPrompt] = useState({ open: false, topicIdx: null, subtopicIdx: null, subtopic: null });
+    const [vizContext, setVizContext] = useState('');
 
     useEffect(
         function () {
@@ -106,22 +108,38 @@ export default function RoadmapDetailPage() {
         }
     }
 
-    async function handleVisualize(topicIdx, subtopicIdx, subtopic) {
+    function openVizPrompt(topicIdx, subtopicIdx, subtopic) {
+        setVizPrompt({ open: true, topicIdx: topicIdx, subtopicIdx: subtopicIdx, subtopic: subtopic });
+        setVizContext('');
+    }
+
+    async function handleVisualize() {
+        var topicIdx = vizPrompt.topicIdx;
+        var subtopicIdx = vizPrompt.subtopicIdx;
+        var subtopic = vizPrompt.subtopic;
+        var userContext = vizContext.trim();
+        setVizPrompt({ open: false, topicIdx: null, subtopicIdx: null, subtopic: null });
+
         const key = `${topicIdx}-${subtopicIdx}`;
         setVizLoading(function (prev) {
             return { ...prev, [key]: true };
         });
 
         try {
+            var body = {
+                subtopic: {
+                    title: subtopic.title,
+                    description: subtopic.description,
+                },
+            };
+            if (userContext) {
+                body.userContext = userContext;
+            }
+
             const res = await fetch(LLM_URL + '/api/visualize', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    subtopic: {
-                        title: subtopic.title,
-                        description: subtopic.description,
-                    },
-                }),
+                body: JSON.stringify(body),
             });
             const data = await res.json();
 
@@ -271,7 +289,7 @@ export default function RoadmapDetailPage() {
                                                 </button>
                                                 <button
                                                     onClick={function () {
-                                                        handleVisualize(topicIdx, subtopicIdx, subtopic);
+                                                        openVizPrompt(topicIdx, subtopicIdx, subtopic);
                                                     }}
                                                     className="btn-visualize"
                                                     disabled={vizLoading[qKey]}
@@ -334,6 +352,39 @@ export default function RoadmapDetailPage() {
                     );
                 })}
             </div>
+
+            {vizPrompt.open && (
+                <div className="viz-overlay" onClick={function () { setVizPrompt({ open: false, topicIdx: null, subtopicIdx: null, subtopic: null }); }}>
+                    <div className="viz-prompt-dialog" onClick={function (e) { e.stopPropagation(); }}>
+                        <h3 className="viz-prompt-title">Generate Visualization</h3>
+                        <p className="viz-prompt-subtitle">{vizPrompt.subtopic ? vizPrompt.subtopic.title : ''}</p>
+                        <p className="viz-prompt-hint">
+                            Add extra context to guide the visualization (optional). For example: "focus on how recursion works step by step" or "show a comparison table".
+                        </p>
+                        <textarea
+                            className="viz-prompt-input"
+                            placeholder="e.g. Show an animated diagram of how the call stack works..."
+                            value={vizContext}
+                            onChange={function (e) { setVizContext(e.target.value); }}
+                            rows={3}
+                        ></textarea>
+                        <div className="viz-prompt-actions">
+                            <button
+                                className="viz-prompt-skip"
+                                onClick={function () { setVizContext(''); handleVisualize(); }}
+                            >
+                                Skip & Generate
+                            </button>
+                            <button
+                                className="viz-prompt-go"
+                                onClick={handleVisualize}
+                            >
+                                Generate
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {vizModal.open && (
                 <VisualizationModal
