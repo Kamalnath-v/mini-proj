@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import RoadmapCard from '@/components/RoadmapCard';
 
 function isRoadmapComplete(roadmap) {
@@ -29,6 +28,8 @@ export default function PathsPage() {
     const [jsonText, setJsonText] = useState('');
     const [uploading, setUploading] = useState(false);
     const [uploadError, setUploadError] = useState('');
+    const [activeTab, setActiveTab] = useState('all');
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(
         function () {
@@ -141,6 +142,28 @@ export default function PathsPage() {
         reader.readAsText(file);
     }
 
+    // Compute stats
+    var activeCount = roadmaps.filter(function (r) { return !isRoadmapComplete(r); }).length;
+    var completedCount = roadmaps.filter(function (r) { return isRoadmapComplete(r); }).length;
+
+    // Filter roadmaps by tab and search
+    var filteredRoadmaps = useMemo(function () {
+        var list = roadmaps;
+        if (activeTab === 'active') {
+            list = list.filter(function (r) { return !isRoadmapComplete(r); });
+        } else if (activeTab === 'completed') {
+            list = list.filter(function (r) { return isRoadmapComplete(r); });
+        }
+        if (searchQuery.trim()) {
+            var q = searchQuery.toLowerCase();
+            list = list.filter(function (r) {
+                return (r.title && r.title.toLowerCase().includes(q)) ||
+                    (r.description && r.description.toLowerCase().includes(q));
+            });
+        }
+        return list;
+    }, [roadmaps, activeTab, searchQuery]);
+
     if (authLoading || loading) {
         return (
             <div className="page-loader">
@@ -150,11 +173,9 @@ export default function PathsPage() {
         );
     }
 
-    var activeRoadmaps = roadmaps.filter(function (r) { return !isRoadmapComplete(r); });
-    var completedRoadmaps = roadmaps.filter(function (r) { return isRoadmapComplete(r); });
-
     return (
         <div className="paths-page">
+            {/* Header */}
             <div className="paths-header">
                 <div>
                     <h1 className="paths-title">Learning Paths</h1>
@@ -164,12 +185,33 @@ export default function PathsPage() {
                 </div>
             </div>
 
+            {/* Stats Bar */}
+            <div className="paths-stats-bar">
+                <div className="paths-stat">
+                    <span className="paths-stat-num">{roadmaps.length}</span>
+                    <span className="paths-stat-label">Total</span>
+                </div>
+                <div className="paths-stat paths-stat-active">
+                    <span className="paths-stat-num">{activeCount}</span>
+                    <span className="paths-stat-label">Active</span>
+                </div>
+                <div className="paths-stat paths-stat-done">
+                    <span className="paths-stat-num">{completedCount}</span>
+                    <span className="paths-stat-label">Completed</span>
+                </div>
+            </div>
+
             {/* Generate Section */}
             <div className="paths-generate-card">
-                <h2 className="paths-generate-title">Create a New Learning Path</h2>
-                <p className="paths-generate-desc">
-                    Enter any topic and our AI will research it, find the best resources, and build a structured roadmap for you.
-                </p>
+                <div className="paths-generate-header">
+                    <div className="paths-generate-icon">+</div>
+                    <div>
+                        <h2 className="paths-generate-title">Create a New Learning Path</h2>
+                        <p className="paths-generate-desc">
+                            Enter any topic and our AI will research it, find the best resources, and build a structured roadmap for you.
+                        </p>
+                    </div>
+                </div>
                 <div className="generate-input-row">
                     <input
                         type="text"
@@ -190,7 +232,7 @@ export default function PathsPage() {
                                 <span className="spinner-sm"></span> Generating...
                             </>
                         ) : (
-                            '+ Generate'
+                            'Generate'
                         )}
                     </button>
                 </div>
@@ -251,40 +293,71 @@ export default function PathsPage() {
                 </div>
             )}
 
-            {/* Active Paths */}
-            {activeRoadmaps.length > 0 && (
-                <div className="paths-section">
-                    <h2 className="paths-section-title">
-                        Active Paths
-                        <span className="paths-count">{activeRoadmaps.length}</span>
-                    </h2>
-                    <div className="roadmap-grid">
-                        {activeRoadmaps.map(function (roadmap) {
-                            return <RoadmapCard key={roadmap._id} roadmap={roadmap} onDelete={handleDelete} />;
-                        })}
+            {/* Tabs + Search */}
+            {roadmaps.length > 0 && (
+                <div className="paths-toolbar">
+                    <div className="paths-tabs">
+                        <button
+                            className={'paths-tab' + (activeTab === 'all' ? ' paths-tab-active' : '')}
+                            onClick={function () { setActiveTab('all'); }}
+                        >
+                            All <span className="paths-tab-count">{roadmaps.length}</span>
+                        </button>
+                        <button
+                            className={'paths-tab' + (activeTab === 'active' ? ' paths-tab-active' : '')}
+                            onClick={function () { setActiveTab('active'); }}
+                        >
+                            Active <span className="paths-tab-count">{activeCount}</span>
+                        </button>
+                        <button
+                            className={'paths-tab' + (activeTab === 'completed' ? ' paths-tab-active' : '')}
+                            onClick={function () { setActiveTab('completed'); }}
+                        >
+                            Completed <span className="paths-tab-count">{completedCount}</span>
+                        </button>
                     </div>
+                    <input
+                        type="text"
+                        className="paths-search-input"
+                        placeholder="Search paths..."
+                        value={searchQuery}
+                        onChange={function (e) { setSearchQuery(e.target.value); }}
+                    />
                 </div>
             )}
 
-            {/* Completed Paths */}
-            {completedRoadmaps.length > 0 && (
-                <div className="paths-section">
-                    <h2 className="paths-section-title">
-                        Completed
-                        <span className="paths-count paths-count-done">{completedRoadmaps.length}</span>
-                    </h2>
-                    <div className="roadmap-grid">
-                        {completedRoadmaps.map(function (roadmap) {
-                            return <RoadmapCard key={roadmap._id} roadmap={roadmap} onDelete={handleDelete} />;
-                        })}
-                    </div>
+            {/* Roadmap Grid */}
+            {filteredRoadmaps.length > 0 && (
+                <div className="roadmap-grid">
+                    {filteredRoadmaps.map(function (roadmap) {
+                        return <RoadmapCard key={roadmap._id} roadmap={roadmap} onDelete={handleDelete} />;
+                    })}
+                </div>
+            )}
+
+            {/* Empty states */}
+            {roadmaps.length > 0 && filteredRoadmaps.length === 0 && (
+                <div className="empty-state">
+                    <h2>No matching paths</h2>
+                    <p>Try adjusting your search or filter to find your learning paths.</p>
                 </div>
             )}
 
             {roadmaps.length === 0 && (
-                <div className="empty-state">
+                <div className="empty-state empty-state-fresh">
+                    <div className="empty-state-icon">
+                        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="4" y="8" width="40" height="32" rx="6" stroke="currentColor" strokeWidth="2" fill="none" opacity="0.3" />
+                            <line x1="12" y1="18" x2="36" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.5" />
+                            <line x1="12" y1="24" x2="28" y2="24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.4" />
+                            <line x1="12" y1="30" x2="32" y2="30" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.3" />
+                            <circle cx="38" cy="34" r="8" fill="var(--accent)" opacity="0.15" />
+                            <line x1="35" y1="34" x2="41" y2="34" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" />
+                            <line x1="38" y1="31" x2="38" y2="37" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" />
+                        </svg>
+                    </div>
                     <h2>No learning paths yet</h2>
-                    <p>Create your first learning path by entering a topic above.</p>
+                    <p>Create your first learning path by entering a topic above. Our AI will build a structured roadmap for you.</p>
                 </div>
             )}
         </div>
