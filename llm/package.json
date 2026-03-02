@@ -1,0 +1,27 @@
+{
+    "name": "llm",
+    "version": "2.0.0",
+    "description": "Deep research agent API server powered by Groq that generates structured learning path roadmaps.",
+    "main": "src/index.js",
+    "type": "module",
+    "scripts": {
+        "start": "node src/index.js"
+    },
+    "keywords": [
+        "research",
+        "agent",
+        "groq",
+        "ai",
+        "roadmap"
+    ],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "axios": "^1.7.9",
+        "cheerio": "^1.0.0",
+        "cors": "^2.8.5",
+        "dotenv": "^17.3.1",
+        "express": "^4.21.0",
+        "groq-sdk": "^0.15.0"
+    }
+}
