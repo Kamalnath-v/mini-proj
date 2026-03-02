@@ -6,6 +6,9 @@ import { useRouter, useParams } from 'next/navigation';
 import Accordion from '@/components/Accordion';
 import QuizCard from '@/components/QuizCard';
 import ClarifyChat from '@/components/ClarifyChat';
+import VisualizationModal from '@/components/VisualizationModal';
+
+const LLM_URL = 'http://localhost:5001';
 
 export default function RoadmapDetailPage() {
     const { user, loading: authLoading, authFetch } = useAuth();
@@ -15,6 +18,8 @@ export default function RoadmapDetailPage() {
     const [loading, setLoading] = useState(true);
     const [generatingQuestions, setGeneratingQuestions] = useState({});
     const [togglingComplete, setTogglingComplete] = useState({});
+    const [vizLoading, setVizLoading] = useState({});
+    const [vizModal, setVizModal] = useState({ open: false, html: '', title: '' });
 
     useEffect(
         function () {
@@ -96,6 +101,40 @@ export default function RoadmapDetailPage() {
             console.error('Failed to generate questions:', err);
         } finally {
             setGeneratingQuestions(function (prev) {
+                return { ...prev, [key]: false };
+            });
+        }
+    }
+
+    async function handleVisualize(topicIdx, subtopicIdx, subtopic) {
+        const key = `${topicIdx}-${subtopicIdx}`;
+        setVizLoading(function (prev) {
+            return { ...prev, [key]: true };
+        });
+
+        try {
+            const res = await fetch(LLM_URL + '/api/visualize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    subtopic: {
+                        title: subtopic.title,
+                        description: subtopic.description,
+                    },
+                }),
+            });
+            const data = await res.json();
+
+            if (res.ok && data.html) {
+                setVizModal({ open: true, html: data.html, title: subtopic.title });
+            } else {
+                alert('Failed to generate visualization: ' + (data.message || 'Unknown error'));
+            }
+        } catch (err) {
+            alert('Could not reach LLM server. Make sure it is running on port 5001.');
+            console.error('Visualize error:', err);
+        } finally {
+            setVizLoading(function (prev) {
                 return { ...prev, [key]: false };
             });
         }
@@ -211,7 +250,7 @@ export default function RoadmapDetailPage() {
                                             title={subtopic.title}
                                             subtitle={subtopic.description}
                                         >
-                                            {/* Complete button */}
+                                            {/* Complete + Visualize buttons */}
                                             <div className="complete-section">
                                                 <button
                                                     onClick={function () {
@@ -228,6 +267,21 @@ export default function RoadmapDetailPage() {
                                                         <>{'\u2713'} Completed</>
                                                     ) : (
                                                         'Mark as Complete'
+                                                    )}
+                                                </button>
+                                                <button
+                                                    onClick={function () {
+                                                        handleVisualize(topicIdx, subtopicIdx, subtopic);
+                                                    }}
+                                                    className="btn-visualize"
+                                                    disabled={vizLoading[qKey]}
+                                                >
+                                                    {vizLoading[qKey] ? (
+                                                        <>
+                                                            <span className="spinner-sm"></span> Generating...
+                                                        </>
+                                                    ) : (
+                                                        'Visualize'
                                                     )}
                                                 </button>
                                             </div>
@@ -280,6 +334,14 @@ export default function RoadmapDetailPage() {
                     );
                 })}
             </div>
+
+            {vizModal.open && (
+                <VisualizationModal
+                    html={vizModal.html}
+                    subtopicTitle={vizModal.title}
+                    onClose={function () { setVizModal({ open: false, html: '', title: '' }); }}
+                />
+            )}
         </div>
     );
 }

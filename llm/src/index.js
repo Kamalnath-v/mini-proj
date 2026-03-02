@@ -91,6 +91,61 @@ Provide a clear, concise, and helpful answer. Use simple language. If relevant, 
     }
 });
 
+// Visualize endpoint — generate interactive HTML/CSS/JS visualization for a subtopic
+app.post('/api/visualize', async (req, res) => {
+    const { subtopic } = req.body;
+
+    if (!subtopic || !subtopic.title) {
+        return res.status(400).json({ error: 'Subtopic with title is required' });
+    }
+
+    const subtopicTitle = subtopic.title;
+    const subtopicDesc = subtopic.description || '';
+
+    console.log(`[Visualize] Generating visualization for: "${subtopicTitle}"`);
+
+    try {
+        const prompt = `You are an expert educational content creator. Create a single, self-contained HTML file that provides an interactive visualization to help a student understand the following topic:
+
+Topic: ${subtopicTitle}
+${subtopicDesc ? `Description: ${subtopicDesc}` : ''}
+
+Requirements:
+- The HTML file must be completely self-contained (inline CSS and JS, no external dependencies).
+- Create a visually appealing, interactive visualization that explains the concept.
+- Use animations, diagrams, interactive elements (buttons, sliders, click events) to make it engaging.
+- Use a clean, modern design with a dark background (#1a1a2e) and vibrant accent colors.
+- Include a clear title and brief explanation text.
+- The visualization should be educational — it should help someone truly understand the concept, not just look pretty.
+- Examples of good visualizations: animated flowcharts, interactive state diagrams, step-by-step walkthroughs, live code demos, draggable elements, animated data structures, etc.
+- Make sure the visualization fits within a 800x500 container.
+- Do NOT use any external libraries, CDNs, or imports. Everything must be inline.
+
+Return ONLY the complete HTML code. Do not include any explanation text before or after the code. Do not wrap it in markdown code blocks. Start directly with <!DOCTYPE html> and end with </html>.`;
+
+        const html = await askLLM(prompt, { temperature: 0.7, maxTokens: 8192 });
+
+        // Clean up the response — strip markdown fences if present
+        let cleanHtml = html.trim();
+        if (cleanHtml.startsWith('```html')) {
+            cleanHtml = cleanHtml.slice(7);
+        } else if (cleanHtml.startsWith('```')) {
+            cleanHtml = cleanHtml.slice(3);
+        }
+        if (cleanHtml.endsWith('```')) {
+            cleanHtml = cleanHtml.slice(0, -3);
+        }
+        cleanHtml = cleanHtml.trim();
+
+        console.log(`[Visualize] Generated ${cleanHtml.length} chars of HTML`);
+
+        res.json({ html: cleanHtml });
+    } catch (err) {
+        console.error(`[Visualize] Failed: ${err.message}`);
+        res.status(500).json({ error: 'Failed to generate visualization', message: err.message });
+    }
+});
+
 // Validate env on startup
 function validateEnv() {
     if (!process.env.GROQ_API_KEY_1 && !process.env.GROQ_API_KEY_2 && !process.env.GROQ_API_KEY) {
@@ -114,6 +169,7 @@ app.listen(PORT, () => {
 ║                                                  ║
 ║  POST /api/research  { "topic": "..." }          ║
 ║  POST /api/clarify   { subtopic, question }       ║
+║  POST /api/visualize { subtopic }                 ║
 ║  GET  /api/health                                ║
 ║                                                  ║
 ╚══════════════════════════════════════════════════╝
