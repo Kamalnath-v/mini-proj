@@ -4,7 +4,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  --bg: #f5f6fa;
+  --bg: #f7f8fc;
   --surface: #ffffff;
   --surface-2: #f0f1f5;
   --text: #1a1a2e;
@@ -12,20 +12,21 @@
   --text-dim: #8b8da3;
   --accent: #6366f1;
   --accent-hover: #4f46e5;
-  --accent-light: rgba(99, 102, 241, 0.08);
-  --accent-glow: rgba(99, 102, 241, 0.15);
-  --border: #e2e4ed;
+  --accent-light: rgba(99, 102, 241, 0.07);
+  --accent-glow: rgba(99, 102, 241, 0.12);
+  --border: #e4e6ef;
   --border-hover: #c8cad8;
   --green: #10b981;
-  --green-bg: rgba(16, 185, 129, 0.08);
+  --green-bg: rgba(16, 185, 129, 0.07);
   --red: #ef4444;
-  --red-bg: rgba(239, 68, 68, 0.08);
+  --red-bg: rgba(239, 68, 68, 0.07);
   --radius: 10px;
-  --radius-lg: 16px;
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.03);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
-  --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --radius-lg: 14px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.03);
+  --transition: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  --max-width: 1080px;
 }
 
 *,
@@ -41,7 +42,7 @@ body {
   background: var(--bg);
   color: var(--text);
   line-height: 1.6;
-  font-size: 15px;
+  font-size: 14.5px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -75,9 +76,9 @@ button {
 }
 
 .navbar-inner {
-  max-width: 900px;
+  max-width: var(--max-width);
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 32px;
   height: 100%;
   display: flex;
   align-items: center;
@@ -162,7 +163,7 @@ button {
 
 /* --- Landing --- */
 .landing {
-  max-width: 900px;
+  max-width: var(--max-width);
   margin: 0 auto;
   padding: 0 24px;
 }
@@ -418,9 +419,9 @@ button {
 
 /* --- Dashboard Overview --- */
 .dashboard-overview {
-  max-width: 900px;
+  max-width: var(--max-width);
   margin: 0 auto;
-  padding: 40px 24px;
+  padding: 36px 32px;
 }
 
 .overview-welcome {
@@ -441,8 +442,8 @@ button {
 
 .overview-stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
   margin-bottom: 28px;
 }
 
@@ -594,9 +595,9 @@ button {
 
 /* --- Learning Paths Page --- */
 .paths-page {
-  max-width: 960px;
+  max-width: var(--max-width);
   margin: 0 auto;
-  padding: 40px 24px;
+  padding: 36px 32px;
 }
 
 .paths-header {
@@ -863,7 +864,7 @@ button {
 
 /* --- Dashboard (legacy) --- */
 .dashboard {
-  max-width: 900px;
+  max-width: var(--max-width);
   margin: 0 auto;
   padding: 40px 24px;
 }

@@ -82,7 +82,7 @@ Student's question: ${question.trim()}
 
 Provide a clear, concise, and helpful answer. Use simple language. If relevant, include a brief example. Keep your answer focused and under 200 words.`;
 
-        const answer = await askLLM(prompt, { temperature: 0.5, maxTokens: 1024 });
+        const answer = await askLLM(prompt, { temperature: 0.5, maxTokens: parseInt(process.env.MAX_TOKENS_CLARIFY) || 1024 });
 
         res.json({ answer });
     } catch (err) {
@@ -136,7 +136,7 @@ TECHNICAL RULES:
 
 Return ONLY the raw HTML. No explanation text, no markdown fences. Start with <!DOCTYPE html> and end with </html>.`;
 
-        const html = await askLLM(prompt, { temperature: 0.7, maxTokens: 8192 });
+        const html = await askLLM(prompt, { temperature: 0.7, maxTokens: parseInt(process.env.MAX_TOKENS_VISUALIZE) || 8192 });
 
         // Clean up the response — strip markdown fences if present
         let cleanHtml = html.trim();

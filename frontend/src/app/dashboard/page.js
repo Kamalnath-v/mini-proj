@@ -55,7 +55,7 @@ export default function DashboardPage() {
         }
     }
 
-    if (authLoading || loading) {
+    if (authLoading || loading || !user) {
         return (
             <div className="page-loader">
                 <div className="spinner"></div>
@@ -88,10 +88,6 @@ export default function DashboardPage() {
                 <div className="stat-card stat-card-done">
                     <span className="stat-number">{stats.completed}</span>
                     <span className="stat-label">Completed</span>
-                </div>
-                <div className="stat-card">
-                    <span className="stat-number">{stats.topics}</span>
-                    <span className="stat-label">Topics Covered</span>
                 </div>
             </div>
 

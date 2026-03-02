@@ -74,7 +74,7 @@ router.post('/generate', async function (req, res) {
         const llmResponse = await axios.post(
             `${LLM_SERVER_URL}/api/research`,
             { topic: topic.trim() },
-            { timeout: 180000 } // 3 minute timeout (LLM research takes ~60s)
+            { timeout: 600000 } // 10 minute timeout (LLM research can take a while)
         );
 
         const roadmapData = llmResponse.data;
