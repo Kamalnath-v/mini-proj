@@ -1,14 +1,23 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import multer from 'multer';
 import { askLLM, getModel } from './groqClient.js';
 import { planTopics } from './planner.js';
 import { researchSubtopics } from './researcher.js';
 import { summarizeAllTopics } from './summarizer.js';
 import { generateRoadmapJSON } from './generator.js';
+import { generateFromRoadmapSh } from './roadmapSh.js';
+import { generateRoadmapFromPDF } from './pdfRoadmapGenerator.js';
 
 const app = express();
 const PORT = process.env.PORT || 5001;
+
+// Multer setup for in-memory PDF uploads (max 10 MB)
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 },
+});
 
 app.use(cors());
 app.use(express.json());
@@ -56,6 +65,55 @@ app.post('/api/research', async (req, res) => {
     } catch (err) {
         console.error(`[API] Research failed: ${err.message}`);
         res.status(500).json({ error: 'Research failed', message: err.message });
+    }
+});
+
+// Roadmap.sh endpoint — generates a roadmap using Groq Compound web search on roadmap.sh
+app.post('/api/roadmap-sh', async (req, res) => {
+    const { topic } = req.body;
+
+    if (!topic || typeof topic !== 'string' || topic.trim().length === 0) {
+        return res.status(400).json({ error: 'Topic is required. Send { "topic": "frontend" } or { "topic": "https://roadmap.sh/frontend" }' });
+    }
+
+    const cleanTopic = topic.trim();
+    console.log(`\n[API] Roadmap.sh request: "${cleanTopic}"`);
+
+    const startTime = Date.now();
+
+    try {
+        const roadmap = await generateFromRoadmapSh(cleanTopic);
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+        console.log(`[API] Roadmap.sh done in ${elapsed}s`);
+        res.json(roadmap);
+    } catch (err) {
+        console.error(`[API] Roadmap.sh failed: ${err.message}`);
+        res.status(500).json({ error: 'Failed to generate roadmap from roadmap.sh', message: err.message });
+    }
+});
+
+// PDF Roadmap endpoint — upload a PDF, extract text, then run the full research pipeline (plan → research → summarize → generate)
+app.post('/api/roadmap-pdf', upload.single('pdf'), async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: 'No PDF file uploaded. Send a multipart form with a "pdf" field.' });
+    }
+
+    if (req.file.mimetype !== 'application/pdf') {
+        return res.status(400).json({ error: `Invalid file type: ${req.file.mimetype}. Only PDF files are accepted.` });
+    }
+
+    console.log(`\n[API] PDF Roadmap request: ${req.file.originalname} (${(req.file.size / 1024).toFixed(1)} KB)`);
+
+    const startTime = Date.now();
+
+    try {
+        const roadmap = await generateRoadmapFromPDF(req.file.buffer);
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+        console.log(`[API] PDF Roadmap done in ${elapsed}s`);
+        res.json(roadmap);
+    } catch (err) {
+        console.error(`[API] PDF Roadmap failed: ${err.message}`);
+        res.status(500).json({ error: 'Failed to generate roadmap from PDF', message: err.message });
     }
 });
 
@@ -166,25 +224,12 @@ function validateEnv() {
         process.exit(1);
     }
     if (!process.env.SERPER_API_KEY) {
-        console.error('[ERROR] SERPER_API_KEY is not set. Add it to .env');
-        process.exit(1);
+        console.warn('[WARN] SERPER_API_KEY is not set. The /api/research endpoint will not work, but /api/roadmap-sh will still work.');
     }
 }
 
 validateEnv();
 
 app.listen(PORT, () => {
-    console.log(`
-╔══════════════════════════════════════════════════╗
-║       Deep Research Agent (Groq) v2.0            ║
-║       API Server running on port ${PORT}            ║
-╠══════════════════════════════════════════════════╣
-║                                                  ║
-║  POST /api/research  { "topic": "..." }          ║
-║  POST /api/clarify   { subtopic, question }       ║
-║  POST /api/visualize { subtopic }                 ║
-║  GET  /api/health                                ║
-║                                                  ║
-╚══════════════════════════════════════════════════╝
-`);
+    console.log(`running at port ${PORT}`);
 });

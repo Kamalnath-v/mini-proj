@@ -91,8 +91,22 @@ export function AuthProvider({ children }) {
         return res;
     }
 
+    // For FormData uploads (PDF etc.) — does NOT set Content-Type so the browser sets the multipart boundary
+    async function authFetchFormData(url, options = {}) {
+        const headers = { ...options.headers };
+        if (token) {
+            headers.Authorization = `Bearer ${token}`;
+        }
+        const res = await fetch(`${API_URL}${url}`, { ...options, headers });
+        if (res.status === 401) {
+            logout();
+            throw new Error('Session expired');
+        }
+        return res;
+    }
+
     return (
-        <AuthContext.Provider value={{ user, token, loading, signup, login, logout, updateUser, authFetch }}>
+        <AuthContext.Provider value={{ user, token, loading, signup, login, logout, updateUser, authFetch, authFetchFormData }}>
             {children}
         </AuthContext.Provider>
     );

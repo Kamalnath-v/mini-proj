@@ -756,6 +756,72 @@ button {
   background: var(--accent-light);
 }
 
+/* PDF Upload */
+.paths-upload-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.btn-upload-pdf {
+  border-color: rgba(168, 85, 247, 0.3);
+  color: #7c3aed;
+}
+
+.btn-upload-pdf:hover {
+  border-color: #7c3aed;
+  color: #7c3aed;
+  background: rgba(124, 58, 237, 0.06);
+}
+
+.btn-upload-pdf:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pdf-selected-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: var(--accent-light);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: var(--radius);
+}
+
+.pdf-selected-name {
+  flex: 1;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn-generate-sm {
+  padding: 7px 16px;
+  font-size: 0.82rem;
+}
+
+.pdf-cancel-btn {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  padding: 7px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  transition: var(--transition);
+}
+
+.pdf-cancel-btn:hover {
+  color: var(--red);
+  border-color: var(--red);
+  background: var(--red-bg);
+}
+
 /* Toolbar: Tabs + Search */
 .paths-toolbar {
   display: flex;

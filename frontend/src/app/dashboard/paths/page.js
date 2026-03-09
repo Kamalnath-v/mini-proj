@@ -17,7 +17,7 @@ function isRoadmapComplete(roadmap) {
 }
 
 export default function PathsPage() {
-    const { user, loading: authLoading, authFetch } = useAuth();
+    const { user, loading: authLoading, authFetch, authFetchFormData } = useAuth();
     const router = useRouter();
     const [roadmaps, setRoadmaps] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -30,6 +30,9 @@ export default function PathsPage() {
     const [uploadError, setUploadError] = useState('');
     const [activeTab, setActiveTab] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const [pdfFile, setPdfFile] = useState(null);
+    const [pdfUploading, setPdfUploading] = useState(false);
+    const [pdfError, setPdfError] = useState('');
 
     useEffect(
         function () {
@@ -142,6 +145,55 @@ export default function PathsPage() {
         reader.readAsText(file);
     }
 
+    function handlePdfFileSelect(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        if (file.type !== 'application/pdf') {
+            setPdfError('Please select a PDF file.');
+            return;
+        }
+        setPdfFile(file);
+        setPdfError('');
+    }
+
+    async function handlePdfUpload() {
+        if (!pdfFile) {
+            setPdfError('Please select a PDF file first.');
+            return;
+        }
+        setPdfUploading(true);
+        setPdfError('');
+        try {
+            var formData = new FormData();
+            formData.append('pdf', pdfFile);
+            const res = await authFetchFormData('/roadmaps/generate-from-pdf', {
+                method: 'POST',
+                body: formData,
+            });
+            // Safely parse response — check if it's actually JSON
+            const contentType = res.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                const text = await res.text();
+                console.error('Non-JSON response from PDF upload:', res.status, text.substring(0, 200));
+                setPdfError('Server returned an unexpected response. Make sure the LLM server is running.');
+                return;
+            }
+            const data = await res.json();
+            if (res.ok) {
+                setRoadmaps(function (prev) {
+                    return [...prev, data.roadmap];
+                });
+                setPdfFile(null);
+            } else {
+                setPdfError(data.message || 'PDF upload failed');
+            }
+        } catch (err) {
+            setPdfError('Failed to generate roadmap from PDF: ' + err.message);
+        } finally {
+            setPdfUploading(false);
+        }
+    }
+
     // Compute stats
     var activeCount = roadmaps.filter(function (r) { return !isRoadmapComplete(r); }).length;
     var completedCount = roadmaps.filter(function (r) { return isRoadmapComplete(r); }).length;
@@ -245,12 +297,43 @@ export default function PathsPage() {
                     <span className="paths-or-text">or</span>
                     <span className="paths-or-line"></span>
                 </div>
-                <button
-                    onClick={function () { setShowUpload(!showUpload); setUploadError(''); }}
-                    className="btn-upload-alt"
-                >
-                    Upload from JSON file
-                </button>
+                <div className="paths-upload-buttons">
+                    <button
+                        onClick={function () { setShowUpload(!showUpload); setUploadError(''); }}
+                        className="btn-upload-alt"
+                    >
+                        Upload from JSON file
+                    </button>
+                    <button
+                        onClick={function () { document.getElementById('pdf-file-input').click(); }}
+                        className="btn-upload-alt btn-upload-pdf"
+                        disabled={pdfUploading}
+                    >
+                        {pdfUploading ? 'Generating from PDF...' : 'Generate from PDF'}
+                    </button>
+                </div>
+                <input
+                    id="pdf-file-input"
+                    type="file"
+                    accept=".pdf"
+                    onChange={handlePdfFileSelect}
+                    hidden
+                />
+                {pdfFile && !pdfUploading && (
+                    <div className="pdf-selected-row">
+                        <span className="pdf-selected-name">{pdfFile.name}</span>
+                        <button onClick={handlePdfUpload} className="btn-generate btn-generate-sm">
+                            Generate Roadmap
+                        </button>
+                        <button onClick={function () { setPdfFile(null); setPdfError(''); }} className="pdf-cancel-btn">
+                            Cancel
+                        </button>
+                    </div>
+                )}
+                {pdfUploading && (
+                    <p className="generate-progress">Extracting content from PDF and building your roadmap. This may take a minute...</p>
+                )}
+                {pdfError && <div className="auth-error">{pdfError}</div>}
             </div>
 
             {showUpload && (
